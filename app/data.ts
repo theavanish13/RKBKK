@@ -4,6 +4,10 @@ import type { Entry } from "./player-context";
 const NINETIES_PLAYLIST_ID = "3379491"; // JioSaavn's "Best Of 90s - Hindi"
 const ONE_DAY = 60 * 60 * 24;
 
+// Cued on first visit, before anyone has played anything. It belongs to neither curated
+// list, so it's fetched on its own rather than looked up inside one of them.
+const DEFAULT_SONG_ID = "0zDU-e5k"; // Jimmy Jimmy Jimmy Aaja — Disco Dancer
+
 // Classic film mujras and ghazals, pinned to their original soundtrack recordings.
 const MUJRA_SONG_IDS = [
   "H57N8ffP", // Dil Cheez Kya Hai — Umrao Jaan
@@ -51,9 +55,10 @@ async function prefetch(load: () => Promise<Song[]>): Promise<Entry[]> {
 // Playlist and song-detail responses both carry a stream url, so every prefetched
 // track plays on click without a second call.
 export async function getEntries() {
-  const [mujra, nineties] = await Promise.all([
+  const [mujra, nineties, defaultSong] = await Promise.all([
     prefetch(() => getSongs(MUJRA_SONG_IDS, ONE_DAY)),
     prefetch(() => getPlaylist(NINETIES_PLAYLIST_ID, undefined, ONE_DAY)),
+    prefetch(() => getSongs([DEFAULT_SONG_ID], ONE_DAY)),
   ]);
-  return { mujra, nineties };
+  return { mujra, nineties, defaultEntry: defaultSong[0] ?? null };
 }

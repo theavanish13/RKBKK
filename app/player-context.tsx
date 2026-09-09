@@ -247,15 +247,23 @@ export function usePlayer() {
   return context;
 }
 
-// Shared first-visit default — every new listener starts here until they've played something.
-const DEFAULT_ENTRY_ID = "BpQCb2H1"; // Salame-Ishq Meri Jaan
 const LAST_PLAYED_STORAGE_KEY = "rkbkk:last-played";
 
 // Owns playback (audio element, queue, controls) and renders the app chrome — header,
 // now-playing bar, footer — around whatever page is currently routed into `children`.
 // Living in the root layout keeps the <audio> element mounted across navigation, so
 // switching between the home page and a full-page playlist view never interrupts playback.
-export function PlayerProvider({ mujra, nineties, children }: { mujra: Entry[]; nineties: Entry[]; children: ReactNode }) {
+export function PlayerProvider({
+  mujra,
+  nineties,
+  defaultEntry,
+  children,
+}: {
+  mujra: Entry[];
+  nineties: Entry[];
+  defaultEntry: Entry | null;
+  children: ReactNode;
+}) {
   const onlineCount = useOnlineCount();
   const audioRef = useRef<HTMLAudioElement>(null);
   const playTokenRef = useRef(0);
@@ -264,9 +272,10 @@ export function PlayerProvider({ mujra, nineties, children }: { mujra: Entry[]; 
   // so a short list (e.g. search results) can hand playback back instead of looping itself.
   const previousZoneRef = useRef<{ list: Entry[]; index: number } | null>(null);
 
-  const defaultIndex = mujra.findIndex((entry) => entry.id === DEFAULT_ENTRY_ID);
-  const [queue, setQueue] = useState<Entry[]>(() => (defaultIndex === -1 ? [] : mujra));
-  const [index, setIndex] = useState<number | null>(() => (defaultIndex === -1 ? null : defaultIndex));
+  // Shared first-visit default — every new listener starts cued here until they've played
+  // something, or until a previously played track is restored from storage below.
+  const [queue, setQueue] = useState<Entry[]>(() => (defaultEntry ? [defaultEntry] : []));
+  const [index, setIndex] = useState<number | null>(() => (defaultEntry ? 0 : null));
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);

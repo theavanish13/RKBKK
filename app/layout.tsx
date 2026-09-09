@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { mujra, nineties } = await getEntries();
+  const { mujra, nineties, defaultEntry } = await getEntries();
 
   return (
     <html
@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full overflow-hidden antialiased`}
     >
       <body className="flex h-full flex-col bg-paper font-sans text-ink">
-        <PlayerProvider mujra={mujra} nineties={nineties}>
+        <PlayerProvider mujra={mujra} nineties={nineties} defaultEntry={defaultEntry}>
           {children}
         </PlayerProvider>
       </body>
