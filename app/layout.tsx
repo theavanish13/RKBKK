@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { getEntries } from "./data";
+import { PlayerProvider } from "./player-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,13 +30,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { mujra, nineties } = await getEntries();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full overflow-hidden antialiased`}
     >
-      <body className="flex h-full flex-col bg-paper font-sans text-ink">{children}</body>
+      <body className="flex h-full flex-col bg-paper font-sans text-ink">
+        <PlayerProvider mujra={mujra} nineties={nineties}>
+          {children}
+        </PlayerProvider>
+      </body>
     </html>
   );
 }
