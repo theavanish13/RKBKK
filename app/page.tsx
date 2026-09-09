@@ -55,51 +55,33 @@ export default function Home() {
   }
 
   return (
-    <section className="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_310px] gap-5 py-3.5 pb-4 max-[860px]:flex max-[860px]:flex-col max-[860px]:gap-3.5 max-[860px]:overflow-y-auto max-[860px]:py-1 max-[860px]:pb-3">
-      <aside className="min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:shrink-0 max-[860px]:overflow-visible">
-        <div className="min-h-full border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] pb-[5px] max-[860px]:hidden">
-          <div className="sticky top-0 z-10 flex items-center justify-between bg-[rgba(8,12,10,.92)] px-[11px] py-[9px]">
-            <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">Mujra playlist</span>
-          </div>
-          {mujra.length > 0 ? renderRows(mujra, mujraVisible) : <p className="m-0 px-[11px] py-[13px] font-mono text-[10px] text-white/55">Mujra picks are unavailable.</p>}
-          {mujraVisible < mujra.length && <div ref={mujraSentinelRef} aria-hidden="true" />}
-        </div>
-        <PlaylistAccordion
-          title="Mujra playlist"
-          list={mujra}
-          emptyMessage="Mujra picks are unavailable."
-          isOpen={expandedPlaylist === "mujra"}
-          onToggle={() => setExpandedPlaylist((current) => (current === "mujra" ? null : "mujra"))}
-          className="hidden max-[860px]:block"
-        />
-      </aside>
+    <section className="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_310px] grid-rows-[auto_minmax(0,1fr)] gap-x-5 gap-y-3.5 py-3.5 pb-4 max-[860px]:flex max-[860px]:flex-col max-[860px]:gap-3.5 max-[860px]:overflow-y-auto max-[860px]:pt-8 max-[860px]:pb-3">
+      <div className="col-start-2 row-start-1 flex flex-col items-center pt-1 pb-1.5 text-white max-[860px]:shrink-0 max-[860px]:pt-0.5 max-[860px]:pb-2">
+        <h1 className="m-0 text-center text-[clamp(22px,2.9vw,46px)] font-extrabold leading-[.86] tracking-[.08em] text-white [text-shadow:0_4px_28px_rgba(0,0,0,.45)] max-[860px]:text-[clamp(24px,7vw,38px)]">
+          SARASWATI BAND
+        </h1>
+        <form className="mt-4 flex w-[min(430px,84vw)] items-center gap-2 max-[860px]:mt-3" onSubmit={search} role="search">
+          <input
+            className="min-w-0 flex-1 rounded-full border border-line bg-[rgba(8,12,10,.46)] px-4 py-2.5 text-xs text-white outline-none placeholder:text-white/50 focus:border-orange max-[860px]:px-3.5 max-[860px]:py-2 max-[860px]:text-[11px]"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search a song"
+            aria-label="Search a song"
+          />
+          <button
+            className="cursor-pointer rounded-full border-0 bg-orange px-[18px] py-2.5 text-xs font-bold text-white transition-colors duration-200 hover:enabled:bg-[#f07f55] disabled:cursor-not-allowed disabled:opacity-[.45] max-[860px]:px-3.5 max-[860px]:py-2 max-[860px]:text-[11px]"
+            type="submit"
+            disabled={isSearching || !query.trim()}
+          >
+            {isSearching ? "···" : "Search"}
+          </button>
+        </form>
+        {searchMessage && <p className="mt-3 mb-0 font-mono text-[11px] text-[#ffc09d]" role="status">{searchMessage}</p>}
+      </div>
 
-      <div className="grid min-h-0 content-start gap-3.5 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:order-first max-[860px]:shrink-0 max-[860px]:overflow-visible">
-        <div className="flex flex-col items-center pt-1 pb-1.5 text-white max-[860px]:pt-0.5 max-[860px]:pb-2">
-          <h1 className="m-0 text-center text-[clamp(42px,6.6vw,96px)] font-extrabold leading-[.86] tracking-[.08em] text-white [text-shadow:0_4px_28px_rgba(0,0,0,.45)] max-[860px]:text-[clamp(38px,13vw,62px)]">
-            KOTHA
-          </h1>
-          <form className="mt-4 flex w-[min(430px,84vw)] items-center gap-2 max-[860px]:mt-3" onSubmit={search} role="search">
-            <input
-              className="min-w-0 flex-1 rounded-full border border-line bg-[rgba(8,12,10,.46)] px-4 py-2.5 text-xs text-white outline-none placeholder:text-white/50 focus:border-orange max-[860px]:px-3.5 max-[860px]:py-2 max-[860px]:text-[11px]"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search a song"
-              aria-label="Search a song"
-            />
-            <button
-              className="cursor-pointer rounded-full border-0 bg-orange px-[18px] py-2.5 text-xs font-bold text-white transition-colors duration-200 hover:enabled:bg-[#f07f55] disabled:cursor-not-allowed disabled:opacity-[.45] max-[860px]:px-3.5 max-[860px]:py-2 max-[860px]:text-[11px]"
-              type="submit"
-              disabled={isSearching || !query.trim()}
-            >
-              {isSearching ? "···" : "Search"}
-            </button>
-          </form>
-          {searchMessage && <p className="mt-3 mb-0 font-mono text-[11px] text-[#ffc09d]" role="status">{searchMessage}</p>}
-        </div>
-
-        {results.length > 0 && (
+      {results.length > 0 && (
+        <div className="col-start-2 row-start-2 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:shrink-0 max-[860px]:overflow-visible">
           <div className="border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] pb-[5px]">
             <div className="sticky top-0 z-10 flex items-center justify-between bg-[rgba(8,12,10,.92)] px-[11px] py-[9px]">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">Results</span>
@@ -113,12 +95,30 @@ export default function Home() {
             </div>
             {renderRows(results)}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <aside className="min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:shrink-0 max-[860px]:overflow-visible">
-        <div className="min-h-full border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] pb-[5px] max-[860px]:hidden">
-          <div className="sticky top-0 z-10 flex items-center justify-between bg-[rgba(8,12,10,.92)] px-[11px] py-[9px]">
+      <aside className="col-start-1 row-start-1 row-span-2 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:shrink-0 max-[860px]:overflow-visible">
+        <div className="min-h-full rounded border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] pb-[5px] max-[860px]:hidden">
+          <div className="sticky top-0 z-10 flex items-center justify-between rounded-t bg-[rgba(8,12,10,.92)] px-[11px] py-[9px]">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">Classical playlist</span>
+          </div>
+          {mujra.length > 0 ? renderRows(mujra, mujraVisible) : <p className="m-0 px-[11px] py-[13px] font-mono text-[10px] text-white/55">Classical picks are unavailable.</p>}
+          {mujraVisible < mujra.length && <div ref={mujraSentinelRef} aria-hidden="true" />}
+        </div>
+        <PlaylistAccordion
+          title="Classical playlist"
+          list={mujra}
+          emptyMessage="Classical picks are unavailable."
+          isOpen={expandedPlaylist === "mujra"}
+          onToggle={() => setExpandedPlaylist((current) => (current === "mujra" ? null : "mujra"))}
+          className="hidden max-[860px]:block"
+        />
+      </aside>
+
+      <aside className="col-start-3 row-start-1 row-span-2 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 max-[860px]:shrink-0 max-[860px]:overflow-visible">
+        <div className="min-h-full rounded border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] pb-[5px] max-[860px]:hidden">
+          <div className="sticky top-0 z-10 flex items-center justify-between rounded-t bg-[rgba(8,12,10,.92)] px-[11px] py-[9px]">
             <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">90s picks</span>
           </div>
           {nineties.length > 0 ? renderRows(nineties, ninetiesVisible) : <p className="m-0 px-[11px] py-[13px] font-mono text-[10px] text-white/55">RKBKK picks are unavailable.</p>}

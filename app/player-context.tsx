@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useOnlineCount } from "./use-online-count";
 
 export type Entry = {
   id: string;
@@ -168,7 +169,7 @@ export function PlaylistAccordion({
 
   if (list.length === 0) {
     return (
-      <div className={`border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] px-[11px] py-3 ${className}`}>
+      <div className={`rounded border border-[rgba(255,244,229,.12)] px-[11px] py-3 ${className}`}>
         <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">{title}</span>
         <p className="m-0 mt-1 font-mono text-[10px] text-white/55">{emptyMessage}</p>
       </div>
@@ -176,11 +177,11 @@ export function PlaylistAccordion({
   }
 
   return (
-    <div className={`border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.38)] ${className}`}>
+    <div className={`rounded border border-[rgba(255,244,229,.12)] ${className}`}>
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-[11px] py-3 text-left text-ink"
+        className="sticky top-0 z-10 flex w-full items-center justify-between gap-3 px-[11px] py-3 text-left text-ink [text-shadow:0_1px_5px_rgba(0,0,0,.85)]"
         aria-expanded={isOpen}
       >
         <span className="flex min-w-0 items-center gap-2.5">
@@ -241,6 +242,7 @@ const LAST_PLAYED_STORAGE_KEY = "rkbkk:last-played";
 // Living in the root layout keeps the <audio> element mounted across navigation, so
 // switching between the home page and a full-page playlist view never interrupts playback.
 export function PlayerProvider({ mujra, nineties, children }: { mujra: Entry[]; nineties: Entry[]; children: ReactNode }) {
+  const onlineCount = useOnlineCount();
   const audioRef = useRef<HTMLAudioElement>(null);
   const playTokenRef = useRef(0);
   const retriedIdRef = useRef<string | null>(null);
@@ -430,7 +432,7 @@ export function PlayerProvider({ mujra, nineties, children }: { mujra: Entry[]; 
 
   return (
     <PlayerContext.Provider value={{ mujra, nineties, queue, current, isPlaying, loadingId, playAt }}>
-      <main className="grid h-[100svh] min-h-[560px] grid-rows-[auto_minmax(0,1fr)_auto_auto] overflow-hidden bg-[linear-gradient(90deg,rgba(10,13,11,.82),rgba(10,13,11,.42)),url('/rr99la.png')] bg-cover bg-center bg-no-repeat px-[6vw] max-[860px]:min-h-[500px] max-[860px]:px-[max(22px,env(safe-area-inset-left))_max(22px,env(safe-area-inset-right))]">
+      <main className="grid h-[100svh] min-h-[560px] grid-rows-[auto_minmax(0,1fr)_auto_auto] overflow-hidden bg-[linear-gradient(90deg,rgba(10,13,11,.82),rgba(10,13,11,.42)),url('/SB.png')] bg-cover bg-center bg-no-repeat px-[6vw] max-[860px]:min-h-[500px] max-[860px]:px-[max(22px,env(safe-area-inset-left))_max(22px,env(safe-area-inset-right))]">
         <audio
           ref={audioRef}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
@@ -446,15 +448,23 @@ export function PlayerProvider({ mujra, nineties, children }: { mujra: Entry[]; 
             <span className="grid h-[25px] w-[25px] place-items-center rounded-full border border-ink font-serif text-sm font-semibold tracking-normal">R</span>
             <span>ROOM 205 / AUDIO</span>
           </div>
-          <span className="text-white/62 max-[860px]:hidden">
-            <span className="mr-[7px] inline-block h-1.5 w-1.5 rounded-full bg-[#73965c]" /> Streaming via RKBKK
+          {/* The static tagline stays desktop-only, but a live count is worth the header room on mobile. */}
+          <span className={`text-white/62 ${onlineCount === null ? "max-[860px]:hidden" : ""}`}>
+            <span className="mr-[7px] inline-block h-1.5 w-1.5 rounded-full bg-[#73965c]" />
+            {onlineCount === null ? (
+              "Streaming via RKBKK"
+            ) : (
+              <span className="whitespace-nowrap text-[12px] font-semibold text-white max-[860px]:text-[11px]">
+                {onlineCount} listening now
+              </span>
+            )}
           </span>
         </header>
 
         {children}
 
         <section
-          className="grid grid-cols-[minmax(0,1.5fr)_auto_minmax(0,2fr)_auto] items-center gap-[22px] border-t border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.42)] py-3.5 pb-4 max-[860px]:grid-cols-[minmax(0,1fr)_auto] max-[860px]:gap-3 max-[860px]:py-2.5 max-[860px]:pb-3"
+          className="grid grid-cols-[minmax(0,1.5fr)_auto_minmax(0,2fr)_auto] items-center gap-[22px] rounded-2xl border border-[rgba(255,244,229,.12)] bg-[rgba(8,12,10,.42)] px-5 py-3.5 pb-4 max-[860px]:grid-cols-[minmax(0,1fr)_auto] max-[860px]:gap-3 max-[860px]:px-3.5 max-[860px]:py-2.5 max-[860px]:pb-3"
           aria-label="Audio player"
         >
           <div className="grid min-w-0 grid-cols-[46px_minmax(0,1fr)] items-center gap-3">
