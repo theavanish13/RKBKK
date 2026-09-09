@@ -55,9 +55,9 @@ export default function Home() {
   }
 
   return (
-    <section className="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_310px] grid-rows-[auto_minmax(0,1fr)] gap-x-5 gap-y-3.5 py-3.5 pb-4 max-[860px]:flex max-[860px]:flex-col max-[860px]:gap-3.5 max-[860px]:overflow-y-auto max-[860px]:pt-8 max-[860px]:pb-3">
+    <section className="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_310px] grid-rows-[auto_minmax(0,1fr)] gap-x-5 gap-y-3.5 py-3.5 pb-4 max-[860px]:flex max-[860px]:flex-col max-[860px]:gap-3.5 max-[860px]:overflow-y-auto max-[860px]:pt-0 max-[860px]:pb-3">
       <div className="col-start-2 row-start-1 flex flex-col items-center pt-1 pb-1.5 text-white max-[860px]:shrink-0 max-[860px]:pt-0.5 max-[860px]:pb-2">
-        <h1 className="m-0 text-center text-[clamp(22px,2.9vw,46px)] font-extrabold leading-[.86] tracking-[.08em] text-white [text-shadow:0_4px_28px_rgba(0,0,0,.45)] max-[860px]:text-[clamp(24px,7vw,38px)]">
+        <h1 className="m-0 pt-10 text-center text-[clamp(22px,2.9vw,46px)] font-extrabold leading-[.86] tracking-[.08em] text-white [text-shadow:0_4px_28px_rgba(0,0,0,.45)] max-[860px]:text-[clamp(24px,7vw,38px)]">
           SARASWATI BAND
         </h1>
         <form className="mt-4 flex w-[min(430px,84vw)] items-center gap-2 max-[860px]:mt-3" onSubmit={search} role="search">

@@ -165,7 +165,20 @@ export function PlaylistAccordion({
 }) {
   const { current, isPlaying, loadingId, playAt } = usePlayer();
   const [visible, sentinelRef] = useLoadMoreOnScroll(list.length);
+  // A marker pinned above the bar: once it scrolls out of the panel's clipped view the bar is
+  // stuck, which is exactly when it needs a backdrop to stay readable over the rows passing
+  // beneath it. A collapsed panel is only as tall as its bar, so it never sticks — and so
+  // never darkens.
+  const [topMarker, topMarkerRef] = useState<HTMLDivElement | null>(null);
+  const [isStuck, setIsStuck] = useState(false);
   const image = list[0]?.image;
+
+  useEffect(() => {
+    if (!topMarker) return;
+    const observer = new IntersectionObserver(([entry]) => setIsStuck(!entry.isIntersecting));
+    observer.observe(topMarker);
+    return () => observer.disconnect();
+  }, [topMarker]);
 
   if (list.length === 0) {
     return (
@@ -178,10 +191,11 @@ export function PlaylistAccordion({
 
   return (
     <div className={`rounded border border-[rgba(255,244,229,.12)] ${className}`}>
+      <div ref={topMarkerRef} className="h-px" aria-hidden="true" />
       <button
         type="button"
         onClick={onToggle}
-        className="sticky top-0 z-10 flex w-full items-center justify-between gap-3 px-[11px] py-3 text-left text-ink [text-shadow:0_1px_5px_rgba(0,0,0,.85)]"
+        className={`sticky top-0 z-10 flex w-full items-center justify-between gap-3 px-[11px] py-3 text-left text-ink transition-colors duration-200 [text-shadow:0_1px_5px_rgba(0,0,0,.85)] ${isStuck ? "rounded-t bg-[rgba(8,12,10,.92)]" : ""}`}
         aria-expanded={isOpen}
       >
         <span className="flex min-w-0 items-center gap-2.5">
