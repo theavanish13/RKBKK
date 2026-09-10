@@ -33,21 +33,36 @@ function describe(entry: Entry) {
   return [entry.artists, entry.album].filter(Boolean).join(" · ");
 }
 
+type SongPayload = {
+  id: string;
+  title: string;
+  album: string;
+  artists: string;
+  singers: string;
+  image: string;
+  duration: number;
+  mediaUrl: string;
+};
+
+function toEntry(song: SongPayload): Entry {
+  return {
+    id: song.id,
+    title: song.title,
+    album: song.album,
+    artists: song.singers || song.artists,
+    image: song.image,
+    duration: song.duration,
+    mediaUrl: song.mediaUrl,
+  };
+}
+
 // Search results arrive without a stream url; song details fill it in on demand.
 async function resolveEntry(entry: Entry): Promise<Entry | null> {
   try {
     const response = await fetch(`/api/saavn/song?id=${encodeURIComponent(entry.id)}`);
     const payload = await response.json();
     if (!response.ok) return null;
-    return {
-      ...entry,
-      title: payload.song.title,
-      album: payload.song.album,
-      artists: payload.song.singers || payload.song.artists,
-      image: payload.song.image,
-      duration: payload.song.duration,
-      mediaUrl: payload.song.mediaUrl,
-    };
+    return { ...entry, ...toEntry(payload.song) };
   } catch {
     return null;
   }
@@ -150,6 +165,7 @@ export function useLoadMoreOnScroll(total: number) {
 // `isOpen`/`onToggle` are lifted to the caller so only one accordion can be open at a time.
 export function PlaylistAccordion({
   title,
+  subtitle,
   list,
   emptyMessage,
   isOpen,
@@ -157,6 +173,8 @@ export function PlaylistAccordion({
   className = "",
 }: {
   title: string;
+  /** Shown under the title in place of the raw track count, e.g. "Top 20 classicals". */
+  subtitle: string;
   list: Entry[];
   emptyMessage: string;
   isOpen: boolean;
@@ -202,7 +220,7 @@ export function PlaylistAccordion({
           {image && <Image className="rounded-[3px] object-cover" src={image} alt="" width={34} height={34} unoptimized />}
           <span className="grid min-w-0 gap-0.5">
             <span className="font-mono text-[10px] font-medium uppercase tracking-[.14em] text-orange">{title}</span>
-            <span className="font-mono text-[10px] text-white/60">{list.length} tracks</span>
+            <span className="font-mono text-[10px] text-white/60">{subtitle}</span>
           </span>
         </span>
         <span aria-hidden="true" className={`font-mono text-sm text-white/60 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
@@ -271,6 +289,14 @@ export function PlayerProvider({
   // The zone (queue + position) playback was in before switching to a different list,
   // so a short list (e.g. search results) can hand playback back instead of looping itself.
   const previousZoneRef = useRef<{ list: Entry[]; index: number } | null>(null);
+  // True only while the listener hasn't touched anything yet — the freshly auto-seeded
+  // default track hasn't ended and no track has been restored from a past visit. While true,
+  // a finished track is followed by another random pick instead of looping itself forever.
+  // Any real selection (a track click, a skip) or a restored session turns it off for good.
+  const isRadioModeRef = useRef(true);
+  // What radio mode has already played, most recent last — lets its "previous" button step
+  // backward through actual history instead of rotating a one-item queue on itself.
+  const radioHistoryRef = useRef<Entry[]>([]);
 
   // Shared first-visit default — every new listener starts cued here until they've played
   // something, or until a previously played track is restored from storage below.
@@ -326,14 +352,17 @@ export function PlayerProvider({
         const inNineties = nineties.findIndex((entry) => entry.id === saved.id);
 
         if (inMujra !== -1) {
+          isRadioModeRef.current = false;
           setQueue(mujra);
           setIndex(inMujra);
           loadEntry(mujra[inMujra]);
         } else if (inNineties !== -1) {
+          isRadioModeRef.current = false;
           setQueue(nineties);
           setIndex(inNineties);
           loadEntry(nineties[inNineties]);
         } else if (saved.mediaUrl) {
+          isRadioModeRef.current = false;
           setQueue([saved]);
           setIndex(0);
           loadEntry(saved);
@@ -356,10 +385,18 @@ export function PlayerProvider({
     }
   }, [current]);
 
+  // `fromRadio` is intentionally not part of the type exposed through context — only
+  // handleEnded's own radio branch (calling this closure directly, not through usePlayer())
+  // can pass it, so any click- or skip-driven call is guaranteed to end radio mode.
   const playAt = useCallback(
-    async (list: Entry[], position: number) => {
+    async (list: Entry[], position: number, fromRadio = false) => {
       const entry = list[position];
       if (!entry) return;
+
+      if (!fromRadio) {
+        isRadioModeRef.current = false;
+        radioHistoryRef.current = [];
+      }
 
       // Switching to a different list mid-playback: remember where we were so that list
       // can resume once this one runs out, instead of the new list looping on its own.
@@ -395,14 +432,58 @@ export function PlayerProvider({
 
   function skip(direction: 1 | -1) {
     if (index === null || queue.length === 0) return;
+    // A normal queue rotates on itself; radio mode has no real queue to rotate (it's a single
+    // ad-hoc track), so its next/previous are driven by a random pick and a history stack instead.
+    if (isRadioModeRef.current) {
+      void radioSkip(direction);
+      return;
+    }
     void playAt(queue, (index + direction + queue.length) % queue.length);
+  }
+
+  // Radio mode's "next song" — drawn from the hidden server-side pool rather than either
+  // visible playlist, so idle playback wanders past what's already on screen. `exclude` stops
+  // a track following itself. Passing `fromRadio` keeps radio mode on, so this chains
+  // indefinitely until the listener picks something themselves. Whatever was playing is
+  // pushed onto the history stack first, so "previous" can return to it.
+  const playRandomRadioEntry = useCallback(async () => {
+    try {
+      const query = current ? `?exclude=${encodeURIComponent(current.id)}` : "";
+      const response = await fetch(`/api/saavn/radio${query}`);
+      const payload = await response.json();
+      if (!response.ok) return;
+
+      if (current) {
+        radioHistoryRef.current.push(current);
+        if (radioHistoryRef.current.length > 50) radioHistoryRef.current.shift();
+      }
+      await playAt([toEntry(payload.song)], 0, true);
+    } catch {
+      // A network hiccup shouldn't tear down the session; the next track end tries again.
+    }
+  }, [current, playAt]);
+
+  async function radioSkip(direction: 1 | -1) {
+    if (direction === 1) {
+      await playRandomRadioEntry();
+      return;
+    }
+    const previous = radioHistoryRef.current.pop();
+    if (!previous) return;
+    await playAt([previous], 0, true);
   }
 
   // A track ending naturally shouldn't loop a short list (e.g. search results) forever:
   // play on through the rest of the current list, then hand back to whatever zone was
-  // interrupted to get here. Only once there's nowhere left to return to does it loop.
+  // interrupted to get here. Only once there's nowhere left to return to does it loop —
+  // unless nothing has been touched yet, in which case radio mode picks a fresh track instead.
   function handleEnded() {
     if (index === null || queue.length === 0) return;
+
+    if (isRadioModeRef.current) {
+      void playRandomRadioEntry();
+      return;
+    }
 
     if (index + 1 < queue.length) {
       void playAt(queue, index + 1);

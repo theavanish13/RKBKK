@@ -108,6 +108,7 @@ export default function Home() {
         </div>
         <PlaylistAccordion
           title="Classical playlist"
+          subtitle={`Top ${mujra.length} classicals`}
           list={mujra}
           emptyMessage="Classical picks are unavailable."
           isOpen={expandedPlaylist === "mujra"}
@@ -126,6 +127,7 @@ export default function Home() {
         </div>
         <PlaylistAccordion
           title="90s picks"
+          subtitle="Best of 90's Bollywood"
           list={nineties}
           emptyMessage="RKBKK picks are unavailable."
           isOpen={expandedPlaylist === "nineties"}
