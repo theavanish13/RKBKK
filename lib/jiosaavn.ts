@@ -161,6 +161,48 @@ export async function searchSongs(query: string): Promise<SearchResult[]> {
   }));
 }
 
+export type Suggestion = {
+  id: string;
+  title: string;
+  type: "song" | "artist" | "album" | "playlist" | "show";
+  image: string;
+};
+
+type RawSuggestItem = { id: string; title: string; image?: string; type: string };
+type RawAutocomplete = Partial<
+  Record<"topquery" | "artists" | "playlists" | "songs" | "albums" | "shows", { data: RawSuggestItem[] }>
+>;
+
+// Category order controls which kind of match leads: artists and playlists cover genre/occasion
+// terms ("bhajan", "punjabi", "chhath puja") that resolve to real catalog playlists, so they're
+// worth surfacing ahead of individual song titles.
+const SUGGESTION_CATEGORIES: (keyof RawAutocomplete)[] = ["topquery", "artists", "playlists", "songs", "albums", "shows"];
+const SUGGESTION_TYPES = new Set(["song", "artist", "album", "playlist", "show"]);
+const MAX_SUGGESTIONS = 8;
+
+// autocomplete.get is JioSaavn's own search-bar typeahead: a best-guess "topquery" plus a
+// handful of matches per category. Capped at ~5 per category (vs. searchSongs' ~40), which is
+// exactly the shape a dropdown needs.
+export async function getSuggestions(query: string): Promise<Suggestion[]> {
+  const response = await callApi<RawAutocomplete>({ __call: "autocomplete.get", query });
+
+  const suggestions: Suggestion[] = [];
+  const seen = new Set<string>();
+
+  for (const category of SUGGESTION_CATEGORIES) {
+    for (const item of response[category]?.data ?? []) {
+      const type = item.type as Suggestion["type"];
+      const key = `${type}:${item.id}`;
+      if (!SUGGESTION_TYPES.has(type) || !item.id || !item.title || seen.has(key)) continue;
+
+      seen.add(key);
+      suggestions.push({ id: item.id, title: decodeText(item.title), type, image: upscaleImage(item.image) });
+      if (suggestions.length >= MAX_SUGGESTIONS) return suggestions;
+    }
+  }
+  return suggestions;
+}
+
 export async function getLyrics(songId: string): Promise<string | null> {
   try {
     const response = await callApi<{ lyrics?: string }>({
